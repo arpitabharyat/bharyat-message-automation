@@ -350,8 +350,9 @@ async def send_rfq_with_parts(
                 await aiosmtplib.send(
                     msg,
                     hostname="smtp.zoho.in",
-                    port=587,
-                    start_tls=True,
+                    port=465,
+                    # start_tls=True,
+                    use_tls=True,
                     username=os.getenv("ZOHO_EMAIL"),
                     password=os.getenv("ZOHO_PASSWORD"),
                     recipients=[supplier["email"]]
