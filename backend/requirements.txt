@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+gunicorn
+supabase
+python-dotenv
+aiosmtplib
+twilio
+openpyxl
+python-multipart
