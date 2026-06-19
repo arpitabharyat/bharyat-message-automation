@@ -460,6 +460,7 @@ def delete_customer(customer_id: int):
 # ---------- Send Message (via Resend) ----------
 
 def send_email(to_email: str, subject: str, body: str, reply_to: Optional[str] = None, attachment_bytes: Optional[bytes] = None, attachment_filename: Optional[str] = None):
+    print("DEBUG KEY:", repr(resend.api_key))
     params = {
         "from": f"Bharyat Advanced Systems <{SENDER_EMAIL}>",
         "to": [to_email],
@@ -469,9 +470,10 @@ def send_email(to_email: str, subject: str, body: str, reply_to: Optional[str] =
     if reply_to:
         params["reply_to"] = reply_to
     if attachment_bytes and attachment_filename:
+        encoded = base64.b64encode(attachment_bytes).decode("utf-8")
         params["attachments"] = [{
             "filename": attachment_filename,
-            "content": list(attachment_bytes),
+            "content": encoded,
         }]
     resend.Emails.send(params)
 
