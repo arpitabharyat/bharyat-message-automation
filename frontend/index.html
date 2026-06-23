@@ -317,11 +317,9 @@
                                 <button class="btn-ghost" onclick="addPart()" style="width:100%;justify-content:center;margin-top:6px"><i class="ti ti-plus"></i> Add Part Number</button>
                             </div>
                             <div class="field"><label>Email Subject</label><input type="text" id="rfq-subject" value="RFQ - Please fill and return" /></div>
-                            <div class="field"><label>Message Body</label><textarea id="rfq-message">Dear Supplier,
+                           <div class="field"><label>Message Body</label><textarea id="rfq-message">Dear Supplier,
 
-Please find attached the RFQ Excel file. Kindly fill in the Data Code, Unit Price, Delivery Time, and Notes columns and return it at your earliest convenience.
-
-Please reply to this email with the filled Excel sheet.
+Please find below the link to submit your quotation. Kindly fill in the Data Code, Unit Price, Delivery Time, and Notes for each part number using the secure form.
 
 Regards,
 Bharyat Advanced Systems</textarea></div>
@@ -334,16 +332,6 @@ Bharyat Advanced Systems</textarea></div>
                     <div class="card">
                         <div class="card-header"><span class="card-title"><i class="ti ti-users"></i> Select Suppliers</span><span class="card-meta" id="rfq-selected-count">0 selected</span></div>
                         <div class="sel-list" id="rfq-supplier-list" style="max-height:400px"><div class="empty-state"><i class="ti ti-users"></i>No suppliers added yet</div></div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header"><span class="card-title"><i class="ti ti-table"></i> Excel Column Guide</span></div>
-                        <div class="card-body" style="padding:12px 20px">
-                            <div class="col-row"><span class="col-badge you">A</span><span class="col-name">Part Number</span><span class="col-who">Filled by you</span></div>
-                            <div class="col-row"><span class="col-badge sup">B</span><span class="col-name">Data Code</span><span class="col-who">Supplier fills</span></div>
-                            <div class="col-row"><span class="col-badge sup">C</span><span class="col-name">Unit Price</span><span class="col-who">Supplier fills</span></div>
-                            <div class="col-row"><span class="col-badge sup">D</span><span class="col-name">Delivery Time</span><span class="col-who">Supplier fills</span></div>
-                            <div class="col-row"><span class="col-badge sup">E</span><span class="col-name">Notes</span><span class="col-who">Supplier fills</span></div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -371,8 +359,8 @@ Bharyat Advanced Systems</textarea></div>
 </div>
 
 <script>
-    // const API = 'http://127.0.0.1:8002';
-    const API = 'https://bharyat-message-automation.onrender.com';
+    const API = 'http://127.0.0.1:8002';
+    // const API = 'https://bharyat-message-automation.onrender.com';
     let customers = [];
     let sendMode = 'all';
 

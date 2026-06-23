@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFQ Response Form | Bharyat Advanced Systems</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --primary: #534AB7;
+            --primary-dark: #3C3489;
+            --primary-light: #EEF0FB;
+            --primary-mid: #AFA9EC;
+            --teal: #0F7A5A;
+            --teal-light: #E8F5F0;
+            --red: #C0392B;
+            --red-light: #FDECEA;
+            --text-primary: #1A1A2E;
+            --text-secondary: #4A4A6A;
+            --text-tertiary: #8888AA;
+            --border: #E2E4EF;
+            --bg: #F4F5FC;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+        }
+        body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); min-height: 100vh; color: var(--text-primary); padding: 2rem 1rem; }
+        .wrap { max-width: 900px; margin: 0 auto; }
+        .header { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+        .header img { height: 44px; }
+        .header-text h1 { font-size: 19px; font-weight: 800; }
+        .header-text p { font-size: 12px; color: var(--text-tertiary); }
+        .card { background: #fff; border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: 0 4px 16px rgba(83,74,183,0.08); margin-bottom: 20px; }
+        .intro { font-size: 14px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 18px; white-space: pre-wrap; }
+        .meta-row { display: flex; gap: 24px; flex-wrap: wrap; padding: 12px 16px; background: var(--primary-light); border-radius: var(--radius-md); margin-bottom: 20px; font-size: 13px; }
+        .meta-row span { font-weight: 600; color: var(--primary); }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+        th { text-align: left; font-size: 11px; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; padding: 10px 8px; border-bottom: 1.5px solid var(--border); }
+        td { padding: 8px; border-bottom: 1.5px solid var(--border); vertical-align: middle; }
+        td.part-cell { font-weight: 700; color: var(--text-primary); font-size: 14px; }
+        input { width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; background: var(--bg); }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(83,74,183,0.10); background: #fff; }
+        .notes-input { min-width: 140px; }
+        .submit-row { display: flex; justify-content: flex-end; margin-top: 20px; }
+        .btn-primary { padding: 12px 28px; background: var(--primary); color: #fff; border: none; border-radius: var(--radius-md); font-size: 14px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(83,74,183,0.3); transition: all 0.2s; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .status-msg { margin-top: 16px; padding: 14px 18px; border-radius: var(--radius-md); font-size: 14px; display: none; align-items: center; gap: 10px; }
+        .status-msg.show { display: flex; }
+        .status-msg.success { background: var(--teal-light); color: var(--teal); border: 1.5px solid #A8DECE; }
+        .status-msg.error { background: var(--red-light); color: var(--red); border: 1.5px solid #F5B8B3; }
+        .success-screen { text-align: center; padding: 3rem 1rem; }
+        .success-screen i { font-size: 56px; color: var(--teal); margin-bottom: 16px; display: block; }
+        .success-screen h2 { font-size: 20px; margin-bottom: 8px; }
+        .success-screen p { font-size: 14px; color: var(--text-tertiary); }
+        .loading, .errorbox { text-align: center; padding: 3rem 1rem; color: var(--text-tertiary); }
+        .errorbox i { font-size: 40px; color: var(--red); display: block; margin-bottom: 12px; }
+        @media (max-width: 600px) {
+            table, thead, tbody, th, td, tr { display: block; }
+            th { display: none; }
+            td { border: none; padding: 4px 0; }
+            tr { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1.5px solid var(--border); }
+            td.part-cell { font-size: 15px; margin-bottom: 6px; }
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="header" id="header-area">
+        <div class="header-text">
+            <h1>RFQ Response Form</h1>
+            <p>Bharyat Advanced Systems</p>
+        </div>
+    </div>
+    <div id="content">
+        <div class="loading"><i class="ti ti-loader" style="font-size:36px"></i><p style="margin-top:10px">Loading RFQ details...</p></div>
+    </div>
+</div>
+
+<script>
+    const API = 'http://127.0.0.1:8002';
+    const params = new URLSearchParams(window.location.search);
+    const rfqId = params.get('id');
+
+    async function loadRFQ() {
+        if (!rfqId) {
+            showError('Invalid RFQ link. No ID found.');
+            return;
+        }
+        try {
+            const res = await fetch(API + '/api/rfq/' + rfqId);
+            if (!res.ok) { showError('This RFQ link is invalid or has expired.'); return; }
+            const data = await res.json();
+            renderForm(data);
+        } catch (e) {
+            showError('Could not load RFQ. Please check your connection.');
+        }
+    }
+
+    function showError(msg) {
+        document.getElementById('content').innerHTML = '<div class="card"><div class="errorbox"><i class="ti ti-alert-circle"></i><p>' + msg + '</p></div></div>';
+    }
+
+    function renderForm(data) {
+        if (data.status === 'submitted') {
+            document.getElementById('content').innerHTML = '<div class="card"><div class="success-screen"><i class="ti ti-circle-check"></i><h2>Already Submitted</h2><p>This RFQ response has already been submitted. Thank you!</p></div></div>';
+            return;
+        }
+
+        const parts = data.part_numbers.split(',').map(p => p.trim()).filter(Boolean);
+
+        let rows = parts.map((part, idx) => `
+            <tr>
+                <td class="part-cell">${part}</td>
+                <td><input type="text" data-idx="${idx}" data-field="data_code" placeholder="e.g. DC-1023" /></td>
+                <td><input type="text" data-idx="${idx}" data-field="unit_price" placeholder="e.g. 12.50" /></td>
+                <td><input type="text" data-idx="${idx}" data-field="delivery_time" placeholder="e.g. 7 days" /></td>
+                <td class="notes-input"><input type="text" data-idx="${idx}" data-field="notes" placeholder="Optional" /></td>
+            </tr>
+        `).join('');
+
+        document.getElementById('content').innerHTML = `
+            <div class="card">
+                <div class="intro">${data.message || ''}</div>
+                <div class="meta-row">
+                    <div>Supplier: <span>${data.supplier_name}</span></div>
+                    <div>Parts: <span>${parts.length}</span></div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Part Number</th>
+                            <th>Data Code</th>
+                            <th>Unit Price</th>
+                            <th>Delivery Time</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="form-rows">${rows}</tbody>
+                </table>
+                <div class="submit-row">
+                    <button type="button" class="btn-primary" id="submit-btn"><i class="ti ti-send"></i> Submit Response</button>
+                </div>
+                <div class="status-msg" id="status-msg"></div>
+            </div>
+        `;
+
+        document.getElementById('submit-btn').addEventListener('click', function() {
+            submitForm(rfqId, parts);
+        });
+    }
+
+    async function submitForm(rfqId, parts) {
+        const btn = document.getElementById('submit-btn');
+        const statusEl = document.getElementById('status-msg');
+        const responses = parts.map((part, idx) => {
+            const get = (field) => document.querySelector(`input[data-idx="${idx}"][data-field="${field}"]`).value.trim();
+            return {
+                part_number: part,
+                data_code: get('data_code'),
+                unit_price: get('unit_price'),
+                delivery_time: get('delivery_time'),
+                notes: get('notes'),
+            };
+        });
+
+        const filledAny = responses.some(r => r.data_code || r.unit_price || r.delivery_time || r.notes);
+        if (!filledAny) {
+            statusEl.innerHTML = '<i class="ti ti-alert-circle"></i> Please fill in at least one field before submitting.';
+            statusEl.className = 'status-msg show error';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-loader"></i> Submitting...';
+
+        try {
+            const res = await fetch(API + '/api/rfq/' + rfqId + '/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ responses })
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('content').innerHTML = '<div class="card"><div class="success-screen"><i class="ti ti-circle-check"></i><h2>Thank You!</h2><p>Your RFQ response has been submitted successfully.</p></div></div>';
+            } else {
+                statusEl.innerHTML = '<i class="ti ti-alert-circle"></i> Submission failed. Please try again.';
+                statusEl.className = 'status-msg show error';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ti ti-send"></i> Submit Response';
+            }
+        } catch (e) {
+            statusEl.innerHTML = '<i class="ti ti-alert-circle"></i> Network error. Please try again.';
+            statusEl.className = 'status-msg show error';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-send"></i> Submit Response';
+        }
+    }
+
+    loadRFQ();
+</script>
+</body>
+</html>
