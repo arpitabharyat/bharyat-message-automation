@@ -39,6 +39,7 @@ twilio = TwilioClient(os.getenv("TWILIO_ACCOUNT_SID"), os.getenv("TWILIO_AUTH_TO
 
 # Resend
 resend.api_key = os.getenv("RESEND_API_KEY")
+print("RESEND KEY LOADED:", repr(resend.api_key))
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "saurav@bharyat.com")
 SIR_EMAIL = os.getenv("SIR_EMAIL", "saurav@bharyat.com")
 
