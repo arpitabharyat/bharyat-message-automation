@@ -292,7 +292,7 @@ async def send_rfq_with_parts(
                 rfq_id = batch_res.data[0]["id"]
 
                 form_link = f"{FRONTEND_BASE_URL}?id={rfq_id}"
-                full_message = message + f"\n\nPlease fill in your quotation using this secure form:\n{form_link}\n\nIf you have questions, reply to this email."
+                full_message = message + f"\n\nPlease fill in your quotation using this secure form:\n<{form_link}>\n\nIf you have questions, reply to this email."
 
                 send_email(
                     supplier["email"],
