@@ -4,16 +4,9 @@ from pydantic import BaseModel
 from typing import Optional, List
 from dotenv import load_dotenv
 from supabase import create_client
-import aiosmtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email import encoders
 from twilio.rest import Client as TwilioClient
-from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles import Font, PatternFill
 import openpyxl
-import shutil
 import io
 import os
 import base64
@@ -72,6 +65,46 @@ class RFQResponseItem(BaseModel):
 class RFQSubmitRequest(BaseModel):
     responses: List[RFQResponseItem]
 
+# ---------- Email Helper ----------
+
+def send_email(
+    to_email: str,
+    subject: str,
+    body: str,
+    reply_to: Optional[str] = None,
+    attachment_bytes: Optional[bytes] = None,
+    attachment_filename: Optional[str] = None,
+    html: Optional[str] = None
+):
+    params = {
+        "from": f"Bharyat Advanced Systems <{SENDER_EMAIL}>",
+        "to": [to_email],
+        "subject": subject,
+        "text": body,
+    }
+    if html:
+        params["html"] = html
+    if reply_to:
+        params["reply_to"] = reply_to
+    if attachment_bytes and attachment_filename:
+        encoded = base64.b64encode(attachment_bytes).decode("utf-8")
+        params["attachments"] = [{
+            "filename": attachment_filename,
+            "content": encoded,
+        }]
+    resend.Emails.send(params)
+
+# ---------- WhatsApp Helper ----------
+
+def send_whatsapp(to_number: str, body: str):
+    if not to_number.startswith('+'):
+        to_number = '+' + to_number
+    twilio.messages.create(
+        from_=os.getenv("TWILIO_WHATSAPP_FROM"),
+        to=f"whatsapp:{to_number}",
+        body=body
+    )
+
 # ---------- Customers ----------
 
 @app.get("/api/customers")
@@ -95,33 +128,7 @@ def delete_customer(customer_id: int):
     supabase.table("customers").delete().eq("id", customer_id).execute()
     return {"success": True}
 
-# ---------- Send Message (via Resend) ----------
-
-def send_email(to_email: str, subject: str, body: str, reply_to: Optional[str] = None, attachment_bytes: Optional[bytes] = None, attachment_filename: Optional[str] = None):
-    params = {
-        "from": f"Bharyat Advanced Systems <{SENDER_EMAIL}>",
-        "to": [to_email],
-        "subject": subject,
-        "text": body,
-    }
-    if reply_to:
-        params["reply_to"] = reply_to
-    if attachment_bytes and attachment_filename:
-        encoded = base64.b64encode(attachment_bytes).decode("utf-8")
-        params["attachments"] = [{
-            "filename": attachment_filename,
-            "content": encoded,
-        }]
-    resend.Emails.send(params)
-
-def send_whatsapp(to_number: str, body: str):
-    if not to_number.startswith('+'):
-        to_number = '+' + to_number
-    twilio.messages.create(
-        from_=os.getenv("TWILIO_WHATSAPP_FROM"),
-        to=f"whatsapp:{to_number}",
-        body=body
-    )
+# ---------- Send Message ----------
 
 @app.post("/api/send-message")
 async def send_message(req: SendMessageRequest):
@@ -261,7 +268,7 @@ async def send_rfq(
 
     return {"success": True, "results": results}
 
-# ---------- RFQ Generate + Send (web form link, not Excel) ----------
+# ---------- RFQ Generate + Send (web form link) ----------
 
 @app.post("/api/rfq/send-with-parts")
 async def send_rfq_with_parts(
@@ -280,7 +287,6 @@ async def send_rfq_with_parts(
     for supplier in suppliers:
         if supplier.get("email"):
             try:
-                # Create one RFQ batch record per supplier
                 batch_res = supabase.table("rfq_batches").insert({
                     "supplier_id": supplier["id"],
                     "supplier_name": supplier["name"],
@@ -292,13 +298,31 @@ async def send_rfq_with_parts(
                 rfq_id = batch_res.data[0]["id"]
 
                 form_link = f"{FRONTEND_BASE_URL}?id={rfq_id}"
-                full_message = message + f"\n\nPlease fill in your quotation here: {form_link}\n\nIf you have questions, reply to this email."
+
+                html_message = f"""
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <img src="https://bharyat.com/message-automation/bharyat_combined _logo.png" 
+                         alt="Bharyat Advanced Systems" 
+                         style="height: 60px; margin-bottom: 20px;" />
+                    <p>{message}</p>
+                    <p>Please fill in your quotation using this secure form:</p>
+                    <a href="{form_link}" 
+                       style="display:inline-block; padding:12px 24px; background:#534AB7; color:#fff; text-decoration:none; border-radius:8px; font-weight:bold; margin:12px 0;">
+                       Fill RFQ Form
+                    </a>
+                    <p style="color:#888; font-size:12px;">Or copy this link: {form_link}</p>
+                    <p>If you have questions, reply to this email.</p>
+                    <hr style="border:none; border-top:1px solid #eee; margin:20px 0;" />
+                    <p style="color:#888; font-size:12px;">Bharyat Advanced Systems</p>
+                </div>
+                """
 
                 send_email(
                     supplier["email"],
                     subject,
-                    full_message,
+                    f"{message}\n\nPlease fill in your quotation here: {form_link}\n\nIf you have questions, reply to this email.",
                     reply_to=SIR_EMAIL,
+                    html=html_message,
                 )
                 results["sent"].append(supplier["name"])
                 supabase.table("message_logs").insert({
@@ -347,7 +371,6 @@ def submit_rfq(rfq_id: str, req: RFQSubmitRequest):
 
     supabase.table("rfq_batches").update({"status": "submitted"}).eq("id", rfq_id).execute()
 
-    # Notify Sir via email
     try:
         rows_text = "\n".join([
             f"- Part: {item.part_number} | Data Code: {item.data_code or '-'} | Price: {item.unit_price or '-'} | Delivery: {item.delivery_time or '-'} | Notes: {item.notes or '-'}"
